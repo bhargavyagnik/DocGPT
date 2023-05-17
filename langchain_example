@@ -1,0 +1,26 @@
+from langchain.vectorstores import Chroma
+from langchain.embeddings import CohereEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.llms import Cohere
+from langchain.chains import VectorDBQA
+from langchain.document_loaders import TextLoader
+
+
+from dotenv import load_dotenv
+load_dotenv()
+
+
+loader = TextLoader('dummy_news.txt')
+documents = loader.load()
+
+
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+texts = text_splitter.split_documents(documents)
+
+embeddings = CohereEmbeddings()
+vectordb = Chroma.from_documents(texts, embeddings)
+
+qa = VectorDBQA.from_chain_type(llm=Cohere(), chain_type="stuff", vectorstore=vectordb)
+
+query = "What is the status of inflation in canada"
+qa.run(query)
