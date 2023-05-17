@@ -2,25 +2,30 @@ from langchain.vectorstores import Chroma
 from langchain.embeddings import CohereEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.llms import Cohere
-from langchain.chains import VectorDBQA
-from langchain.document_loaders import TextLoader
+from langchain.chains import RetrievalQA
+from langchain.document_loaders import PyPDFLoader
 
 
 from dotenv import load_dotenv
 load_dotenv()
 
 
-loader = TextLoader('dummy_news.txt')
-documents = loader.load()
+loader = PyPDFLoader("resume.pdf")
+pages = loader.load_and_split()
+
 
 
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-texts = text_splitter.split_documents(documents)
+texts = text_splitter.split_documents(pages)
 
 embeddings = CohereEmbeddings()
 vectordb = Chroma.from_documents(texts, embeddings)
+retriever = vectordb.as_retriever(search_type="similarity", search_kwargs={"k":5})
 
-qa = VectorDBQA.from_chain_type(llm=Cohere(), chain_type="stuff", vectorstore=vectordb)
+qa = RetrievalQA.from_chain_type(llm=Cohere(), chain_type="stuff",retriever=retriever, return_source_documents=True)
 
-query = "What is the status of inflation in canada"
-qa.run(query)
+print("Starting Chat, (q) to Exit :")
+while True:
+    print("test")
+    question = input("Chat : ")
+    print(qa({'query':question}))
